@@ -13,12 +13,14 @@ module Invoker
           validate_tld(options[:tld])  
           selected_installer_klass.tld = tld
         end
-        installer = selected_installer_klass.new
-        installer.install
+        selected_installer_klass.new.install
       end
 
       def self.uninstall
         selected_installer_klass = installer_klass
+
+        power_config = Invoker::Power::Config.load_config
+        selected_installer_klass.tld = power_config.tld
         selected_installer_klass.new.uninstall_invoker
       end
 
@@ -85,20 +87,12 @@ module Invoker
       end
 
       def remove_resolver_file
-        set_tld
-
         begin
           safe_remove_file(resolver_file)
         rescue Errno::EACCES
           Invoker::Logger.puts("Running uninstall requires root access, please rerun it with sudo".color(:red))
           raise
         end
-      end
-
-      # Load tld from power config file
-      def set_tld
-        power_config = Invoker::Power::Config.load_config
-        Invoker::Power::Setup.tld = power_config.tld
       end
 
       def safe_remove_file(file)
